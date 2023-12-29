@@ -25,5 +25,5 @@ $ python CNN.py
 ```
 
 ## Evaluation
-You can reproduce the Case Studies and Performance Comparisons in [case_study] and [performance_comparison] Notebooks.
+You can reproduce the Case Studies and Performance Comparisons in [case_study](https://github.com/huan-xiao/SMTRI/blob/main/case_study.ipynb) and [performance_comparison](https://github.com/huan-xiao/SMTRI/blob/main/performance_comparison.ipynb).
 
