@@ -241,7 +241,7 @@ def count_bp_reverse(count_bp_AU1, count_bp_UA1, count_bp_CG1, count_bp_GC1, cou
     
     
     
-def get_features_for_E(index, motif_seg): # external loop
+def get_features_for_E(index, motif_seg): # external loop, for autoencoder
     motif = motif_seg[0]
     motif_len = len(motif)
     motif_GC_content = find_GC_content(motif)/motif_len
@@ -280,7 +280,7 @@ def get_features_for_E(index, motif_seg): # external loop
 
 
 
-def get_features_for_H(index, motif_seg): # hairpin loop, testing set won't have hairpin, so the feature is desinged for training's convenience
+def get_features_for_H(index, motif_seg): # hairpin loop, testing set won't have hairpin, so the feature is desinged for training's convenience,  for autoencoder
     motif = motif_seg[0][1]+motif_seg[1]+motif_seg[0][3]
     motif_len = len(motif)
     motif_GC_content = find_GC_content(motif)/motif_len
@@ -314,7 +314,7 @@ def get_features_for_H(index, motif_seg): # hairpin loop, testing set won't have
 
 
 
-def get_features_for_B(index, motif_seg): # bulge loop
+def get_features_for_B(index, motif_seg): # bulge loop, for autoencoder
     # in order, bulge in miRNA
     motif1 = motif_seg[0][1]+motif_seg[1]+motif_seg[2][1]+motif_seg[2][3]+motif_seg[0][3]
     motif_len = len(motif1)
@@ -373,7 +373,7 @@ def get_features_for_B(index, motif_seg): # bulge loop
     
     
     
-def get_features_for_I(index, motif_seg): #  internal loop
+def get_features_for_I(index, motif_seg): #  internal loop, for autoencoder
     # in order
     motif1= motif_seg[0][1]+motif_seg[1]+motif_seg[2][1]+motif_seg[2][3]+motif_seg[3]+motif_seg[0][3]
     motif_len = len(motif1)
@@ -433,7 +433,7 @@ def get_features_for_I(index, motif_seg): #  internal loop
     
 
     
-def get_features_for_M(index, motif_seg): # multibranch loop, I can generate several, but since the data is not reliable, for penalty, I just generate one
+def get_features_for_M(index, motif_seg): # multibranch loop, for autoencoder
     # form the linear motif
     seg_num = len(motif_seg)
     motif = motif_seg[0][1]
@@ -473,6 +473,106 @@ def get_features_for_M(index, motif_seg): # multibranch loop, I can generate sev
                           count_bp_AU,count_bp_UA,count_bp_CG,count_bp_GC,count_bp_GU,count_bp_UG,\
                           miR_len,miR_ratio,miR_GC_content,\
                           miR_count_A,miR_count_C,miR_count_G,miR_count_U]],columns=columns_names)
+
+
+def get_features_for_Bulge(motif_seg): # bulge loop, functions for encoder only
+    # in order, bulge in miRNA
+    motif1 = motif_seg[0][1]+motif_seg[1]+motif_seg[2][1]+motif_seg[2][3]+motif_seg[0][3]
+    motif_len = len(motif1)
+    motif_GC_content = find_GC_content(motif1)/motif_len
+    motif_unpaired_len = motif_len-4
+    motif_unpaired_ratio = (motif_unpaired_len)/motif_len
+    motif_count_A,motif_count_C,motif_count_G,motif_count_U = count_base_single(motif1)
+    motif_unpaired_count_A, motif_unpaired_count_C, motif_unpaired_count_G, motif_unpaired_count_U = count_base_single(motif_seg[1])
+    motif_count_AA1,motif_count_AC1,motif_count_AG1,motif_count_AU1,\
+    motif_count_CA1,motif_count_CC1,motif_count_CG1,motif_count_CU1,\
+    motif_count_GA1,motif_count_GC1,motif_count_GG1,motif_count_GU1,\
+    motif_count_UA1,motif_count_UC1,motif_count_UG1,motif_count_UU1 = count_base_double(motif1)
+    count_bp_AU1,count_bp_UA1,count_bp_CG1,count_bp_GC1,count_bp_GU1,count_bp_UG1 = count_bp(motif_seg[0],motif_seg[2])
+    miR_len1 = motif_len-2
+    miR_ratio1 = miR_len1/motif_len
+    miRNA = motif_seg[0][1]+motif_seg[1]+motif_seg[2][1] # temp
+    miR_GC_content1 = find_GC_content(miRNA)/miR_len1
+    miR_count_A1, miR_count_C1, miR_count_G1, miR_count_U1 = count_base_single(miRNA)
+    
+   
+    return [motif1,motif_len,motif_GC_content,motif_unpaired_len,motif_unpaired_ratio,\
+            motif_count_A,motif_count_C,motif_count_G,motif_count_U,\
+            motif_unpaired_count_A,motif_unpaired_count_C,motif_unpaired_count_G,motif_unpaired_count_U,\
+            motif_count_AA1,motif_count_AC1,motif_count_AG1,motif_count_AU1,\
+            motif_count_CA1,motif_count_CC1,motif_count_CG1,motif_count_CU1,\
+            motif_count_GA1,motif_count_GC1,motif_count_GG1,motif_count_GU1,\
+            motif_count_UA1,motif_count_UC1,motif_count_UG1,motif_count_UU1,\
+            count_bp_AU1,count_bp_UA1,count_bp_CG1,count_bp_GC1,count_bp_GU1,count_bp_UG1,\
+            miR_len1,miR_ratio1,miR_GC_content1,\
+            miR_count_A1,miR_count_C1,miR_count_G1,miR_count_U1]
+
+
+def get_features_for_Internal(motif_seg): # internal loop, functions for encoder only
+    # in order
+    motif1= motif_seg[0][1]+motif_seg[1]+motif_seg[2][1]+motif_seg[2][3]+motif_seg[3]+motif_seg[0][3]
+    motif_len = len(motif1)
+    motif_GC_content = find_GC_content(motif1)/motif_len
+    motif_unpaired_len = motif_len-4
+    motif_unpaired_ratio = motif_unpaired_len/motif_len
+    motif_count_A,motif_count_C,motif_count_G,motif_count_U = count_base_single(motif1)
+    motif_unpaired_count_A, motif_unpaired_count_C, motif_unpaired_count_G, motif_unpaired_count_U = count_base_single(motif_seg[1]+motif_seg[3])
+    motif_count_AA1,motif_count_AC1,motif_count_AG1,motif_count_AU1,\
+    motif_count_CA1,motif_count_CC1,motif_count_CG1,motif_count_CU1,\
+    motif_count_GA1,motif_count_GC1,motif_count_GG1,motif_count_GU1,\
+    motif_count_UA1,motif_count_UC1,motif_count_UG1,motif_count_UU1 = count_base_double(motif1)
+    count_bp_AU1,count_bp_UA1,count_bp_CG1,count_bp_GC1,count_bp_GU1,count_bp_UG1 = count_bp(motif_seg[0],motif_seg[2])
+    miR_len1 = len(motif_seg[1])+2
+    miR_ratio1 = miR_len1/motif_len
+    miRNA = motif_seg[0][1]+motif_seg[1]+motif_seg[2][1] # temp
+    miR_GC_content1 = find_GC_content(miRNA)/miR_len1
+    miR_count_A1, miR_count_C1, miR_count_G1, miR_count_U1 = count_base_single(miRNA)
+      
+    return [motif1,motif_len,motif_GC_content,motif_unpaired_len,motif_unpaired_ratio,\
+            motif_count_A,motif_count_C,motif_count_G,motif_count_U,\
+            motif_unpaired_count_A,motif_unpaired_count_C,motif_unpaired_count_G,motif_unpaired_count_U,\
+            motif_count_AA1,motif_count_AC1,motif_count_AG1,motif_count_AU1,\
+            motif_count_CA1,motif_count_CC1,motif_count_CG1,motif_count_CU1,\
+            motif_count_GA1,motif_count_GC1,motif_count_GG1,motif_count_GU1,\
+            motif_count_UA1,motif_count_UC1,motif_count_UG1,motif_count_UU1,\
+            count_bp_AU1,count_bp_UA1,count_bp_CG1,count_bp_GC1,count_bp_GU1,count_bp_UG1,\
+            miR_len1,miR_ratio1,miR_GC_content1,\
+            miR_count_A1,miR_count_C1,miR_count_G1,miR_count_U1]
+
+
+def get_motif_feature(case): # latent feature + statistical feature, for encoder only
+
+    # generate motif statistical features
+    motif_sf = []
+    for motif in case:
+        motif_seg = motif.split(' ')
+        seg_num = len(motif_seg)
+
+        if seg_num==3: # bulge
+            motif_sf.append(get_features_for_Bulge(motif_seg))
+        elif seg_num==4: # internal loop
+            motif_sf.append(get_features_for_Internal(motif_seg))
+
+    # generate motif latent feature
+    dict = {'A': [1,0,0,0,0], 'C': [0,1,0,0,0], 'G': [0,0,1,0,0], 'U': [0,0,0,1,0]}
+    AE_model = tf.keras.models.load_model('./model/autoencoder.h5') # if the model cannot be loaded, try downgrade h5py
+    
+    motifs_onehot = []
+    for m in motif_sf:
+        m_onehot=[]
+        for letter in m[0]:
+            m_onehot.append(dict[letter])
+        motifs_onehot.append(m_onehot)
+    
+    padded_inputs = tf.keras.preprocessing.sequence.pad_sequences(motifs_onehot, maxlen=16,padding="post",value=[0,0,0,0,1])
+    motif_ae = AE_model.predict(padded_inputs,verbose=0)
+
+    # combine autoencoder feature with statistical feature
+    motif_sf = np.array(motif_sf)[:,1:]
+    motif_sf = motif_sf.astype('float64')
+    motif_feature = np.concatenate((motif_ae,motif_sf),axis=1)
+    
+    return motif_feature
 
 
 
@@ -528,10 +628,11 @@ def get_RNA_latent_feature(data_motif): # input: sequence, via: autoencoder, out
     
     
     
-if __name__ == "__main__": # the four steps can be done separately
+if __name__ == "__main__": 
+    # the following four steps can be done separately
     #df_original = pd.read_csv('./data/RNA_motif-SM_SMILES.csv')
     
-    print('################## Start getting SM fingerprint features... ##################') # 1024-bits
+    print('################## Start getting SM fingerprint features... ##################') # 1024-bits, it takes long time, please save the results.
     #df_fp, df_selected = get_SM_fingerprints(df_original)
     #df_fp.to_csv('./data/saved_fp.csv', index=False)
     #df_selected.to_csv('./data/save_selected.csv', index=False)
@@ -546,7 +647,7 @@ if __name__ == "__main__": # the four steps can be done separately
     
     #df_fp_dp = pd.read_csv('./data/saved_fp_dp.csv')
     
-    print('################## Start getting RNA statistical features... ##################') # 41-bits, but add one colume of motif sequences
+    print('################## Start getting RNA statistical features... ##################') # 41-bits, added one colume of motif sequences
     #df_st = get_RNA_statistical_feature(df_selected)
     #df_st.to_csv('./data/saved_st.csv', index=False)
     

@@ -29,7 +29,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import RocCurveDisplay
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import matthews_corrcoef
@@ -52,7 +54,7 @@ def print_train_loss(history, dimension):
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig("./data/CNN training and validation loss.png")
+    plt.savefig("./result/CNN training and validation loss.png")
     
     
 def print_train_accuracy(history, dimension):
@@ -67,14 +69,10 @@ def print_train_accuracy(history, dimension):
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.savefig("./data/CNN training and validation accuracy.png") 
+    plt.savefig("./result/CNN training and validation accuracy.png") 
 
     
-def print_auc(y_test, y_pred):
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-
+def print_auc(model_name, y_test, y_pred):
     fpr, tpr, thresholds = roc_curve(y_test, abs(y_pred))# use results instead of predictions
     roc_auc = auc(fpr, tpr)
 
@@ -87,7 +85,7 @@ def print_auc(y_test, y_pred):
     plt.ylabel('True Positive Rate')
     plt.title('Receiver Operating Characteristic')
     plt.legend(loc="lower right")
-    plt.savefig('./data/ROC_AUC.png')
+    plt.savefig('./result/'+model_name+'_ROC_AUC.png')
     
      
 def print_confusion_matrix(y_test, predictions):
@@ -98,14 +96,10 @@ def print_confusion_matrix(y_test, predictions):
     plt.figure()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['N','P'])
     disp.plot(cmap=plt.cm.Blues)
-    plt.savefig('./data/Confusion_Matrix.png')
+    plt.savefig('./result/SMTRI_Confusion_Matrix.png')
     
     
-def print_metrics(x_test, y_test):
-    saved_model = tf.keras.models.load_model('./model/best_DNN_model.h5')
-    
-    y_pred = saved_model.predict(x_test, verbose=0)
-    print_auc(y_test, y_pred)
+def print_metrics(y_test, y_pred):
     
     predictions = np.round(y_pred)
     print_confusion_matrix(y_test, predictions)
@@ -115,8 +109,8 @@ def print_metrics(x_test, y_test):
     print('MCC:', end=' ')
     print(round(matthews_corrcoef(y_test, predictions),3))
     
-    
-def CNN_based_model(x_train, x_test, y_train, y_test):
+
+def CNN_model():
     # model layers
     inputs = Input(shape=(1620,1))
     cov1 = Conv1D(3, 3, activation='relu', kernel_regularizer=l2(0.01))(inputs)
@@ -141,33 +135,83 @@ def CNN_based_model(x_train, x_test, y_train, y_test):
     # compile the keras model binary_crossentropy,BinaryCrossentropy()
     model.compile(loss='binary_crossentropy', optimizer='Adamax', metrics=['binary_accuracy'])
     
+    return model
+    
+    
+def training(model, x_train, y_train):
     dimension = 78
-    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=dimension, verbose=1)
+    history = model.fit(x_train, y_train, batch_size=32, epochs=dimension, verbose=1)
     
-    # print train loss and accuracy
-    #print_train_loss(history, dimension)
-    #print_train_accuracy(history, dimension)
+
+def training_with_CV(model, x_train, y_train):
+    n_splits=5
+    cv = StratifiedKFold(n_splits, shuffle=True)
     
-    model.save('./model/best_DNN_model.h5')
+    tprs = []
+    aucs = []
+    mean_fpr = np.linspace(0, 1, 1000)
+    fig, ax = plt.subplots(figsize=(6, 6))
+    colors = ['red','orange','yellow','green','blue']
+    
+    for fold, (train, test) in enumerate(cv.split(x_train, y_train)):
+        model = CNN_model()
+        model.fit(x_train[train], y_train[train], epochs=80, batch_size=32, verbose=1)
+        y_pred = model.predict(x_train[test], verbose=0)
+
+        viz = RocCurveDisplay.from_predictions(
+            y_train[test],
+            y_pred,
+            name=f"ROC fold {fold}",
+            alpha=0.3,
+            color = colors[fold],
+            ax=ax
+        )
+        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+        aucs.append(viz.roc_auc)
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(aucs)
+    ax.plot(
+        mean_fpr,
+        mean_tpr,
+        color="b",
+        label=r"Mean ROC (AUC = %0.3f $\pm$ %0.3f)" % (mean_auc, std_auc),
+        lw=2,
+        alpha=0.8,
+    )
+    
+    ax.plot([0, 1], [0, 1], color='black', lw=2, linestyle='--', alpha=0.7)
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="grey",
+        alpha=0.2,
+        label=r"$\pm$ 1 std. dev.",
+    )
+
+    ax.set(
+        xlim=[-0.05, 1.05],
+        ylim=[-0.05, 1.05],
+        xlabel="False Positive Rate",
+        ylabel="True Positive Rate",
+        title=f"Receiver Operating Characteristic",
+    )
+    ax.axis("square")
+    ax.legend(loc="lower right")
+
+    plt.savefig('./result/SMTRI_CV_ROC.png')
     
     
 if __name__ == "__main__":
-    # read feature data, split to train and test sets
-    '''
-    training_set = pd.read_csv('./data/training_set.csv')
-    
-    X=training_set.iloc[:, 0:-1]
-    y=training_set['target']
-    
-    X = X.to_numpy()
-    y = y.to_numpy()
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=0)
-    
-    np.save('./data/x_train.npy', x_train)
-    np.save('./data/x_test.npy', x_test)
-    np.save('./data/y_train.npy', y_train)
-    np.save('./data/y_test.npy', y_test)
-    '''
     
     # load train and test feature data
     x_train = np.load('./data/x_train.npy')
@@ -175,8 +219,21 @@ if __name__ == "__main__":
     y_train = np.load('./data/y_train.npy')
     y_test = np.load('./data/y_test.npy')
     
-    # train CNN model
-    CNN_based_model(x_train, x_test, y_train, y_test)
+    # define model
+    #model = CNN_model()
+    #print(model.summary())
+    
+    # train with CV=5, to tune the parameters
+    #training_with_CV(model, x_train, y_train)
+    
+    # train CNN model, with best parameters
+    #training(model, x_train, y_train)
+    #model.save('./model/best_DNN_model.h5')
+
+    # make prediction
+    saved_model = tf.keras.models.load_model('./model/best_DNN_model.h5')
+    y_pred = saved_model.predict(x_test, verbose=0)
     
     # evaluate the model
-    print_metrics(x_test, y_test)
+    print_metrics(y_test, y_pred)
+    print_auc("SMTRI", y_test, y_pred)
