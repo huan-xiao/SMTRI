@@ -15,13 +15,13 @@ A deep learning based approach for predicting Small Molecules Targeting miRNA-mR
 
 You can install the dependencies with the versioins specified in requirements.txt. 
 
-# Dataset
+## Dataset
 The datasets used in training and testing are provided in ./data folder. We also provide valid RNA motif-SM associations with molecular properties in [Zenodo](https://zenodo.org/records/10439440). 
 
 ## Usage
 You can train or test the trained SMTRI model:
 ```
-$ python CNN.py
+$ python main.py
 ```
 
 ## Evaluation
