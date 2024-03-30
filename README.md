@@ -29,7 +29,7 @@ We also prepared the docker image [smtri](https://hub.docker.com/u/hilaryhsiao),
 $ docker image pull hilaryhsiao/smtri:2.0
 $ docker run hilaryhsiao/smtri:2.0 <args>
 ```
-The parameters in "<args>" above are miRNA sequence, mRNA sequence, and SM SMILES. For example:
+The parameters in <args> above are miRNA sequence, mRNA sequence, and SM SMILES. For example:
 1. miRNA, a sequence made up of 'A,C,G,U'.
 ```
 "AACGCACACUGCGCUGCUU"
