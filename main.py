@@ -36,6 +36,7 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import matthews_corrcoef
 from scipy import interp
+from sklearn.utils import shuffle
 
 # set network seed to make it reproducible
 keras.utils.set_random_seed(1)
@@ -85,10 +86,10 @@ def print_auc(model_name, y_test, y_pred):
     plt.ylabel('True Positive Rate')
     plt.title('Receiver Operating Characteristic')
     plt.legend(loc="lower right")
-    plt.savefig('./result/'+model_name+'_ROC_AUC.png')
+    plt.savefig('./temp/pic/'+model_name+'_ROC_AUC.png')
     
      
-def print_confusion_matrix(y_test, predictions):
+def print_confusion_matrix(model_name, y_test, predictions):
     
     class_names = [0,1]
 
@@ -96,13 +97,13 @@ def print_confusion_matrix(y_test, predictions):
     plt.figure()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['N','P'])
     disp.plot(cmap=plt.cm.Blues)
-    plt.savefig('./result/SMTRI_Confusion_Matrix.png')
+    plt.savefig('./temp/pic/'+model_name+'SMTRI_Confusion_Matrix.png')
     
     
-def print_metrics(y_test, y_pred):
+def print_metrics(model_name, y_test, y_pred):
     
     predictions = np.round(y_pred)
-    print_confusion_matrix(y_test, predictions)
+    print_confusion_matrix(model_name, y_test, predictions)
     print(classification_report(y_test, predictions,digits=3))
     print('Accuracy:', end=' ')
     print(round(accuracy_score(y_test, predictions),3))
@@ -139,7 +140,9 @@ def CNN_model():
     
     
 def training(model, x_train, y_train):
-    dimension = 78
+    #mc = ModelCheckpoint('./temp/best_DNN_model_{epoch:02d}.h5', monitor='loss', mode='min', verbose=1, save_best_only=False)
+    
+    dimension = 77
     history = model.fit(x_train, y_train, batch_size=32, epochs=dimension, verbose=1)
     
 
@@ -209,31 +212,45 @@ def training_with_CV(model, x_train, y_train):
     ax.legend(loc="lower right")
 
     plt.savefig('./result/SMTRI_CV_ROC.png')
+
+
+def eval(name, path):
+    testing_set = pd.read_csv(path)
+    x_test = np.array(testing_set.iloc[:,:-1])
+    y_test = np.array(testing_set.iloc[:,-1:]).reshape(-1)
+    x_test, y_test = shuffle(x_test, y_test, random_state=1)
     
+    saved_model = tf.keras.models.load_model('./model/best_DNN_model.h5')
+    y_pred = saved_model.predict(x_test, verbose=0)
+    
+    # evaluate the model
+    print_metrics(name, y_test, y_pred)
+    print_auc(name, y_test, y_pred)
+        
+        
     
 if __name__ == "__main__":
     
     # load train and test feature data
     x_train = np.load('./data/x_train.npy')
-    x_test = np.load('./data/x_test.npy')
     y_train = np.load('./data/y_train.npy')
-    y_test = np.load('./data/y_test.npy')
     
     # define model
-    #model = CNN_model()
-    #print(model.summary())
+    model = CNN_model()
+    print(model.summary())
     
     # train with CV=5, to tune the parameters
     #training_with_CV(model, x_train, y_train)
     
     # train CNN model, with best parameters
-    #training(model, x_train, y_train)
-    #model.save('./model/best_DNN_model.h5')
-
-    # make prediction
-    saved_model = tf.keras.models.load_model('./model/best_DNN_model.h5')
-    y_pred = saved_model.predict(x_test, verbose=0)
+    training(model, x_train, y_train)
+    model.save('./model/best_DNN_model.h5')
     
-    # evaluate the model
-    print_metrics(y_test, y_pred)
-    print_auc("SMTRI", y_test, y_pred)
+    
+    '''
+    # evaluate
+    eval("SMTRI_RPocket", './data/RPocket_testing_set.csv')
+    eval("SMTRI_PubChem", './data/PubChem_testing_set.csv')
+    eval("SMTRI_PDB", './data/PDB_testing_set.csv')
+    '''
+    
