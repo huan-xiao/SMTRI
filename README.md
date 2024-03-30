@@ -63,5 +63,5 @@ The results are presented in three columns [InchiKey, SMILES, Probability]. Thos
 ```
 
 ## Evaluation
-You can reproduce the Case Studies and Performance Comparisons in [case_study](https://github.com/huan-xiao/SMTRI/blob/main/case_study.ipynb) and [SOTA](https://github.com/huan-xiao/SMTRI/blob/main/SOTA_comparison.ipynb).
+You can reproduce the Case Studies and Performance Comparisons in [case_study](https://github.com/huan-xiao/SMTRI/blob/main/case_study.ipynb) and [SOTA_comparison](https://github.com/huan-xiao/SMTRI/blob/main/SOTA_comparison.ipynb).
 
