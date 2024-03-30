@@ -16,10 +16,10 @@ A deep learning based approach for predicting Small Molecules Targeting miRNA-mR
 You can install the dependencies with the versioins specified in requirements.txt. 
 
 ## Dataset
-The datasets used in training and testing are provided in ./data folder. We also provide valid RNA motif-SM associations with molecular properties in [Zenodo](https://zenodo.org/records/10439440). 
+The datasets used in training and testing are provided in ./data folder. We also provide all models, predictions, and additional files in [Zenodo](https://zenodo.org/records/10897646).
 
 ## Usage
-You can train or test the trained SMTRI model:
+You can train the SMTRI model:
 ```
 $ python main.py
 ```
@@ -47,7 +47,7 @@ CN1CCNC(=O)C[C@@H]2CN(S(=O)(=O)c3ccc4c(c3)OCCCO4)C[C@@H]2n2cc(nn2)Cn2cccc(c2=O)C
 O=C1OC2=CC(=CC(OC3OC(CO)C(O)C(O)C3O)=C2C4=C1CCC4)C
 O=C1C=C(OC=2C1=C(O)C=C(O)C2C(C=3C=CC=CC3)CC(=O)OC)C=4C=CC=CC4"
 ```
-So, the CMD for running the docker image can be like: (selecting targeting SMs for miRNA-mRNA interactions from a list of 6 SMs)
+So, the command for running the docker image can be like: (selecting targeting SMs for miRNA-mRNA interactions from a list of 6 SMs)
 ```
 docker run hilaryhsiao/smtri:2.0 "AACGCACACUGCGCUGCUU" "GGGGGGGCCCCCCCCCCCAGACCCACUGUGCGUUUUUUUUUU" "C[n+]1ccc(c2c1cccc2)Cc3[n+](c4ccccc4s3)CC(=O)NCCOC
 CC[C@H](C)[C@H](NC(=O)[C@H](CC(=O)OCc1ccccc1)NC(=O)[C@H](N)CC(C)C)C(=O)N[C@@H](C)C(N)=O
