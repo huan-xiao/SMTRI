@@ -244,7 +244,7 @@ if __name__ == "__main__":
     
     # train CNN model, with best parameters
     training(model, x_train, y_train)
-    model.save('./model/best_DNN_model.h5')
+    #model.save('./model/best_DNN_model.h5')
     
     
     '''
