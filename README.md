@@ -16,7 +16,7 @@ A deep learning based approach for predicting Small Molecules Targeting miRNA-mR
 You can install the dependencies with the versioins specified in requirements.txt. 
 
 ## Dataset
-The datasets used in training and testing are provided in ./data folder. We also provide all models, predictions, and additional files in [Zenodo](https://zenodo.org/records/10897646).
+The datasets used in training and testing are provided in ./data folder. We also provide all models, predictions, and additional files in [Zenodo](https://zenodo.org/records/10897739).
 
 ## Usage
 You can train the SMTRI model:
