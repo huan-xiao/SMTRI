@@ -1,4 +1,5 @@
 # compare SOTA algorithms
+
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifier
@@ -12,12 +13,14 @@ from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import classification_report
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.metrics import matthews_corrcoef
 from sklearn.metrics import precision_recall_curve
 from sklearn.utils import shuffle
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
@@ -27,139 +30,137 @@ from xgboost import XGBClassifier
 import pandas as pd
 from sklearn.metrics import cohen_kappa_score
 from joblib import dump, load
+from main import *
+import warnings
+warnings.filterwarnings("ignore", message="WARNING")
+
 
 keras.utils.set_random_seed(0)
 tf.config.experimental.enable_op_determinism()
 np.random.seed(0)
 
-
-def print_auc(model_name, y_test, y_pred):
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-
-    fpr, tpr, thresholds = roc_curve(y_test, abs(y_pred))# use results instead of predictions
-    roc_auc = auc(fpr, tpr)
-
-    plt.figure()
-    plt.rcParams.update({'font.size': 14})
-    plt.plot(fpr, tpr, color='r', lw=2, label='ROC curve (AUC = %0.3f)' % roc_auc, alpha=0.9)
-    plt.plot([0, 1], [0, 1], color='black', lw=2, linestyle='--', alpha=0.7)
-    plt.xlim([-0.05, 1.05])
-    plt.ylim([-0.05, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic')
-    plt.legend(loc="lower right")
-    plt.savefig('./result/'+model_name+'_ROC_AUC.png')
-    plt.close()
     
+def get_metrics(y_test, y_pred):
     
-def print_confusion_matrix(model_name, y_test, predictions):
-    class_names = [0,1]
-    cm = confusion_matrix(y_test, predictions, labels=class_names)
-    plt.figure()
-    plt.rcParams.update({'font.size': 14})
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['N','P'])
-    disp.plot(cmap=plt.cm.Blues)
-    plt.savefig('./result/'+model_name+'_Confusion_Matrix.png')
-    plt.close()
-    
-    
-def print_metrics(model_name, y_test, y_pred):
-    
-    print_auc(model_name, y_test, y_pred)
-
     predictions = np.round(y_pred)
-    print_confusion_matrix(model_name, y_test, predictions)
     
-    print("################# "+model_name+" #################")
-    print(classification_report(y_test, predictions,digits=3))
-    print('Accuracy:', end=' ')
-    print(round(accuracy_score(y_test, predictions),3))
-    print('MCC:', end=' ')
-    print(round(matthews_corrcoef(y_test, predictions),3))
-    print('Kappa:', end=' ')
-    print(round(cohen_kappa_score(y_test, predictions),3))
-
+    AUC = round(roc_auc_score(y_test, y_pred),3)
+    Accuracy = round(accuracy_score(y_test, predictions),3)
+    Precision = round(precision_score(y_test, predictions),3)
+    Recall = round(recall_score(y_test, predictions),3)
+    F1_Score = round(f1_score(y_test, predictions),3)
+    MCC = round(matthews_corrcoef(y_test, predictions),3)
+    Kappa = round(cohen_kappa_score(y_test, predictions),3)
+    
+    return [AUC, Accuracy, Precision, Recall, F1_Score, MCC, Kappa]
         
+    
+def cross_validation(model, model_name, X, y):
+    kf = KFold(n_splits=5)
+    AUC=[]
+    Accuracy=[]
+    Precision=[]
+    Recall=[]
+    F1_Score=[]
+    MCC=[]
+    Kappa=[]
+    
+    tprs = []
+    base_fpr = np.linspace(0, 1, 100)
+    
+    
+    for fold, (train_index, test_index) in enumerate(kf.split(X, y)):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        
+        this_model = model
+        
+        if "SMTRI" in model_name:
+            this_model.fit(X_train, y_train, epochs=78, batch_size=32, verbose=0)
+            y_pred = this_model.predict(X_test, verbose=0)
+        else:
+            this_model.fit(X_train, y_train)
+            y_pred = this_model.predict(X_test)
+            
+        fpr, tpr, _ = roc_curve(y_test, y_pred)
+        tpr = np.interp(base_fpr, fpr, tpr)
+        tpr[0] = 0.0
+        tprs.append(tpr)
+        
+        metrics = get_metrics(y_test, y_pred)
+        AUC.append(metrics[0])
+        Accuracy.append(metrics[1])
+        Precision.append(metrics[2])
+        Recall.append(metrics[3])
+        F1_Score.append(metrics[4])
+        MCC.append(metrics[5])
+        Kappa.append(metrics[6])
+        
+        
+    print("\n***** "+model_name+" *****")
+    print('AUC: '+f"{round(np.mean(AUC),3)}"+u"\u00B1"+f"{round(np.std(AUC),3)}")
+    print('Accuracy: '+f"{round(np.mean(Accuracy),3)}"+u"\u00B1"+f"{round(np.std(Accuracy),3)}")
+    print('Precision: '+f"{round(np.mean(Precision),3)}"+u"\u00B1"+f"{round(np.std(Precision),3)}")
+    print('Recall: '+f"{round(np.mean(Recall),3)}"+u"\u00B1"+f"{round(np.std(Recall),3)}")
+    print('F1-Score: '+f"{round(np.mean(F1_Score),3)}"+u"\u00B1"+f"{round(np.std(F1_Score),3)}")
+    print('MCC: '+f"{round(np.mean(MCC),3)}"+u"\u00B1"+f"{round(np.std(MCC),3)}")
+    print('Kappa: '+f"{round(np.mean(Kappa),3)}"+u"\u00B1"+f"{round(np.std(Kappa),3)}")
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+
+    
+    return mean_tpr
 
     
 if __name__ == "__main__":
     
-    # load data
-    training_set = pd.read_csv('./data/Training_set.csv')
-    x_train = np.array(training_set.iloc[:,:-1])
-    y_train = np.array(training_set.iloc[:,-1:]).reshape(-1)
-    x_train, y_train = shuffle(x_train, y_train, random_state=1)
-    
-    
-    # three testing datasets
+    # load three testing datasets
     testing_set_1 = pd.read_csv('./data/PDB_testing_set.csv')
-    x_test_1 = np.array(testing_set_1.iloc[:,:-1])
-    y_test_1 = np.array(testing_set_1.iloc[:,-1:]).reshape(-1)
-    x_test_1, y_test_1 = shuffle(x_test_1, y_test_1, random_state=1)
+    x_1 = np.array(testing_set_1.iloc[:,:-1])
+    y_1 = np.array(testing_set_1.iloc[:,-1:]).reshape(-1)
+    x_1, y_1 = shuffle(x_1, y_1, random_state=1)
     
     testing_set_2 = pd.read_csv('./data/PubChem_testing_set.csv')
-    x_test_2 = np.array(testing_set_2.iloc[:,:-1])
-    y_test_2 = np.array(testing_set_2.iloc[:,-1:]).reshape(-1)
-    x_test_2, y_test_2 = shuffle(x_test_2, y_test_2, random_state=1)
+    x_2 = np.array(testing_set_2.iloc[:,:-1])
+    y_2 = np.array(testing_set_2.iloc[:,-1:]).reshape(-1)
+    x_2, y_2 = shuffle(x_2, y_2, random_state=1)
     
     testing_set_3 = pd.read_csv('./data/RPocket_testing_set.csv')
-    x_test_3 = np.array(testing_set_3.iloc[:,:-1])
-    y_test_3 = np.array(testing_set_3.iloc[:,-1:]).reshape(-1)
-    x_test_3, y_test_3 = shuffle(x_test_3, y_test_3, random_state=1)
-    
+    x_3 = np.array(testing_set_3.iloc[:,:-1])
+    y_3 = np.array(testing_set_3.iloc[:,-1:]).reshape(-1)
+    x_3, y_3 = shuffle(x_3, y_3, random_state=1)
     
     
     # SMTRI
-    SMTRI = tf.keras.models.load_model('./model/best_DNN_model.h5')
-    y_pred_1 = SMTRI.predict(x_test_1, verbose=0)
-    print_metrics('SMTRI_PDB', y_test_1, y_pred_1)
-    y_pred_2 = SMTRI.predict(x_test_2, verbose=0)
-    print_metrics('SMTRI_PubChem', y_test_2, y_pred_2)
-    y_pred_3 = SMTRI.predict(x_test_3, verbose=0)
-    print_metrics('SMTRI_RPocket', y_test_3, y_pred_3)
+    SMTRI = tf.keras.models.load_model('./model/DNN_model.h5')
+    
+    SMTRI_PDB_tpr = cross_validation(SMTRI, "SMTRI_PDB", x_1, y_1)
+    SMTRI_PubChem_tpr = cross_validation(SMTRI, "SMTRI_PubChem", x_2, y_2)
+    SMTRI_RPocket_tpr = cross_validation(SMTRI, "SMTRI_RPocket", x_3, y_3)
     
     
     # XGBoost
-    XGB = XGBClassifier(objective= 'binary:logistic', n_estimators= 200, min_child_weight= 20, max_depth= 20, learning_rate= 0.01, gamma= 2, colsample_bytree= 0.8, booster= 'gbtree').fit(x_train, y_train)
+    XGB = load('./model/XGB_best.joblib')
     
-    #dump(XGB, './model/XGBoost.joblib')
-    
-    y_pred_1 = XGB.predict_proba(x_test_1)[:,1]
-    print_metrics('XGB_PDB', y_test_1, y_pred_1)
-    y_pred_2 = XGB.predict_proba(x_test_2)[:,1]
-    print_metrics('XGB_PubChem', y_test_2, y_pred_2)
-    y_pred_3 = XGB.predict_proba(x_test_3)[:,1]
-    print_metrics('XGB_RPocket', y_test_3, y_pred_3)
+    XGB_PDB_tpr = cross_validation(XGB, "XGB_PDB", x_1, y_1)
+    XGB_PubChem_tpr = cross_validation(XGB, "XGB_PubChem", x_2, y_2)
+    XGB_RPocket_tpr = cross_validation(XGB, "XGB_RPocket", x_3, y_3)
     
     
     # NB
-    NB = GaussianNB(var_smoothing=1e-8).fit(x_train, y_train)
-
-    #dump(NB, './model/NB.joblib')
+    NB = load('./model/NB_best.joblib')
     
-    y_pred_1 = NB.predict_proba(x_test_1)[:,1]
-    print_metrics('NB_PDB', y_test_1, y_pred_1)
-    y_pred_2 = NB.predict_proba(x_test_2)[:,1]
-    print_metrics('NB_PubChem', y_test_2, y_pred_2)
-    y_pred_3 = NB.predict_proba(x_test_3)[:,1]
-    print_metrics('NB_RPocket', y_test_3, y_pred_3)
+    NB_PDB_tpr = cross_validation(NB, "NB_PDB", x_1, y_1)
+    NB_PubChem_tpr = cross_validation(NB, "NB_PubChem", x_2, y_2)
+    NB_RPocket_tpr = cross_validation(NB, "NB_RPocket", x_3, y_3)
     
     
     # RFSMMA
-    RFSMMA = RandomForestClassifier(n_estimators= 25, min_samples_split= 4, max_features= 'log2', max_depth= 10, criterion= 'log_loss').fit(x_train, y_train)
+    RFSMMA = load('./model/RFSMMA_best.joblib')
     
-    #dump(RFSMMA, './model/RFSMMA.joblib')
-    
-    y_pred_1 = RFSMMA.predict_proba(x_test_1)[:,1]
-    print_metrics('RFSMMA_PDB', y_test_1, y_pred_1)
-    y_pred_2 = RFSMMA.predict_proba(x_test_2)[:,1]
-    print_metrics('RFSMMA_PubChem', y_test_2, y_pred_2)
-    y_pred_3 = RFSMMA.predict_proba(x_test_3)[:,1]
-    print_metrics('RFSMMA_RPocket', y_test_3, y_pred_3)
-    
-    
+    RFSMMA_PDB_tpr = cross_validation(RFSMMA, "RFSMMA_PDB", x_1, y_1)
+    RFSMMA_PubChem_tpr = cross_validation(RFSMMA, "RFSMMA_PubChem", x_2, y_2)
+    RFSMMA_RPocket_tpr = cross_validation(RFSMMA, "RFSMMA_RPocket", x_3, y_3)
     
     
