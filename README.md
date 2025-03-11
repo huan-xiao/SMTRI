@@ -67,7 +67,7 @@ You can reproduce the Case Studies and Performance Comparisons in [case_study](h
 
 
 ## Citation
-Please cite the following paper:
+Please cite the following [paper](https://www.sciencedirect.com/science/article/pii/S2162253124001902?via%3Dihub):  
 Xiao, H., Zhang, Y., Yang, X., Yu, S., Chen, Z., Lu, A., Zhang, Z., Zhang, G., and Zhang, B.-T. (2024). SMTRI: A deep learning-based web service for predicting small molecules that target miRNA-mRNA interactions. Molecular Therapy - Nucleic Acids. 35(3).
 
 The user-friendly website of SMTRI is on: http://www.smtri.net/
