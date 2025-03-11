@@ -1,5 +1,6 @@
 # SMTRI
 A deep learning based approach for predicting Small Molecules Targeting miRNA-mRNA Interactions (SMTRI).
+![title](Title.jpg)
 
 ## Requirements
 * Python 3.8
@@ -64,7 +65,6 @@ The results are presented in three columns [InchiKey, SMILES, Probability]. Thos
 
 ## Evaluation
 You can reproduce the Case Studies and Performance Comparisons in [case_study](https://github.com/huan-xiao/SMTRI/blob/main/case_study.ipynb) and [SOTA_comparison](https://github.com/huan-xiao/SMTRI/blob/main/SOTA_comparison.ipynb).
-
 
 ## Citation
 Please cite the following [paper](https://www.sciencedirect.com/science/article/pii/S2162253124001902?via%3Dihub):  
