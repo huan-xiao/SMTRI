@@ -1,6 +1,6 @@
 # SMTRI
 A deep learning based approach for predicting Small Molecules Targeting miRNA-mRNA Interactions (SMTRI).
-![title](Title.jpg)
+![title](Title.jpg=646x621)
 
 ## Requirements
 * Python 3.8
