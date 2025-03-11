@@ -65,3 +65,9 @@ The results are presented in three columns [InchiKey, SMILES, Probability]. Thos
 ## Evaluation
 You can reproduce the Case Studies and Performance Comparisons in [case_study](https://github.com/huan-xiao/SMTRI/blob/main/case_study.ipynb) and [SOTA_comparison](https://github.com/huan-xiao/SMTRI/blob/main/SOTA_comparison.ipynb).
 
+
+## Citation
+Please cite the following paper:
+Xiao, H., Zhang, Y., Yang, X., Yu, S., Chen, Z., Lu, A., Zhang, Z., Zhang, G., and Zhang, B.-T. (2024). SMTRI: A deep learning-based web service for predicting small molecules that target miRNA-mRNA interactions. Molecular Therapy - Nucleic Acids. 35(3).
+
+The user-friendly website of SMTRI is on: http://www.smtri.net/
